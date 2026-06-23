@@ -1,7 +1,7 @@
 {
   "name": "dpk",
   "version": "1.0.0",
-  "description": "Astro static site displaying articles from edrlab.org WordPress",
+  "description": "Astro + Supabase article site with an admin editor",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
@@ -15,8 +15,8 @@
   },
   "keywords": [
     "astro",
-    "wordpress",
-    "headless-cms"
+    "supabase",
+    "editor"
   ],
   "author": "",
   "license": "MIT",

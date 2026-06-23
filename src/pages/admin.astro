@@ -1,0 +1,576 @@
+---
+const pageTitle = "DPK Editor";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #12161f;
+        --panel: #1b2230;
+        --line: #2f3d55;
+        --ink: #e8edf9;
+        --muted: #9fb0d1;
+        --accent: #57c7a2;
+        --danger: #ff7d7d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        background:
+          radial-gradient(circle at 85% -20%, #2b3750 0%, transparent 40%),
+          radial-gradient(circle at -10% 100%, #1f2f2a 0%, transparent 45%),
+          var(--bg);
+        color: var(--ink);
+      }
+      .shell {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 1.3rem;
+      }
+      .panel {
+        background: rgba(27, 34, 48, 0.9);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 1rem;
+        backdrop-filter: blur(2px);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        gap: 1rem;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .muted { color: var(--muted); }
+      .status {
+        margin: 0.8rem 0;
+        border-radius: 10px;
+        padding: 0.7rem;
+        border: 1px solid transparent;
+      }
+      .ok { background: #11291f; border-color: #2a8c67; }
+      .err { background: #351f24; border-color: #7e3d48; }
+      form {
+        display: grid;
+        gap: 0.8rem;
+      }
+      label {
+        display: grid;
+        gap: 0.4rem;
+        font-size: 0.95rem;
+      }
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #121925;
+        color: var(--ink);
+        padding: 0.7rem;
+        font: inherit;
+      }
+      textarea { min-height: 180px; resize: vertical; }
+      .actions {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 0;
+        border-radius: 9px;
+        padding: 0.66rem 0.95rem;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .primary { background: var(--accent); color: #052316; }
+      .secondary { background: #2d3b56; color: var(--ink); }
+      .danger { background: var(--danger); color: #2a0505; }
+      .list {
+        display: grid;
+        gap: 0.6rem;
+        max-height: 75vh;
+        overflow: auto;
+      }
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.8rem;
+        background: #151d2a;
+      }
+      .item-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+        align-items: center;
+      }
+      .item h3 {
+        margin: 0;
+        font-size: 1rem;
+      }
+      .item p {
+        margin: 0.35rem 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .tiny {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .cover-meta {
+        display: grid;
+        gap: 0.35rem;
+      }
+      .cover-preview {
+        width: 100%;
+        max-height: 220px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+      }
+      .hidden { display: none !important; }
+      @media (max-width: 900px) {
+        .row { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="header">
+        <h1>{pageTitle}</h1>
+        <a class="muted" href="/">Open Public Site</a>
+      </div>
+
+      <div id="status" class="status hidden"></div>
+
+      <div id="authPanel" class="panel">
+        <h2>Sign in</h2>
+        <p class="muted">Use a Supabase user account with access to the articles table.</p>
+        <form id="loginForm">
+          <label>
+            Email
+            <input id="email" type="email" required />
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" required />
+          </label>
+          <div class="actions">
+            <button class="primary" type="submit">Sign in</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="editorPanel" class="row hidden">
+        <section class="panel">
+          <div class="header">
+            <h2>Article Form</h2>
+            <button id="signOut" class="secondary" type="button">Sign out</button>
+          </div>
+          <form id="articleForm">
+            <input id="id" type="hidden" />
+            <label>
+              Title
+              <input id="title" required />
+            </label>
+            <label>
+              Slug
+              <input id="slug" required pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$" />
+              <span class="tiny">lowercase letters, numbers and hyphens only</span>
+            </label>
+            <label>
+              Excerpt
+              <textarea id="excerpt" maxlength="500"></textarea>
+            </label>
+            <label>
+              Body
+              <textarea id="body"></textarea>
+            </label>
+            <label>
+              Cover image
+              <input id="coverImageFile" type="file" accept="image/*" />
+              <span class="tiny">Max 5MB. JPG, PNG, WEBP, GIF.</span>
+            </label>
+            <div class="cover-meta">
+              <img id="coverPreview" class="cover-preview hidden" alt="Cover preview" />
+              <input id="coverImageUrl" type="hidden" />
+              <input id="coverImagePath" type="hidden" />
+              <input id="removeCoverFlag" type="hidden" value="false" />
+              <button id="removeCover" class="secondary hidden" type="button">Remove cover image</button>
+            </div>
+            <label>
+              <input id="published" type="checkbox" checked /> Published
+            </label>
+            <div class="actions">
+              <button class="primary" type="submit">Save article</button>
+              <button id="resetForm" class="secondary" type="button">New article</button>
+              <button id="deleteArticle" class="danger hidden" type="button">Delete article</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="panel">
+          <h2>Articles</h2>
+          <div id="articles" class="list"></div>
+        </aside>
+      </div>
+    </div>
+
+    <script type="module">
+      import { supabase, storageBucket } from "../lib/supabaseClient";
+
+      const statusEl = document.getElementById("status");
+      const authPanel = document.getElementById("authPanel");
+      const editorPanel = document.getElementById("editorPanel");
+      const loginForm = document.getElementById("loginForm");
+      const articleForm = document.getElementById("articleForm");
+      const articlesEl = document.getElementById("articles");
+      const signOutBtn = document.getElementById("signOut");
+      const resetFormBtn = document.getElementById("resetForm");
+      const deleteBtn = document.getElementById("deleteArticle");
+      const removeCoverBtn = document.getElementById("removeCover");
+      const titleInput = document.getElementById("title");
+      const slugInput = document.getElementById("slug");
+      const coverImageFileInput = document.getElementById("coverImageFile");
+      const coverPreview = document.getElementById("coverPreview");
+      const coverImageUrlInput = document.getElementById("coverImageUrl");
+      const coverImagePathInput = document.getElementById("coverImagePath");
+      const removeCoverFlagInput = document.getElementById("removeCoverFlag");
+
+      function setStatus(message, kind = "ok") {
+        statusEl.classList.remove("hidden", "ok", "err");
+        statusEl.classList.add(kind === "err" ? "err" : "ok");
+        statusEl.textContent = message;
+      }
+
+      function hideStatus() {
+        statusEl.classList.add("hidden");
+      }
+
+      function slugify(value) {
+        return (value || "")
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-");
+      }
+
+      function toText(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function getFileExt(filename) {
+        const index = filename.lastIndexOf(".");
+        return index === -1 ? "bin" : filename.slice(index + 1).toLowerCase();
+      }
+
+      function updateCoverPreview(url) {
+        if (url) {
+          coverPreview.src = url;
+          coverPreview.classList.remove("hidden");
+          removeCoverBtn.classList.remove("hidden");
+        } else {
+          coverPreview.src = "";
+          coverPreview.classList.add("hidden");
+          removeCoverBtn.classList.add("hidden");
+        }
+      }
+
+      async function uploadCoverImage(file, slug) {
+        const safeSlug = slugify(slug) || "draft";
+        const path = `${safeSlug}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${getFileExt(file.name)}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(storageBucket)
+          .upload(path, file, { upsert: false });
+
+        if (uploadError) {
+          throw new Error(uploadError.message);
+        }
+
+        const { data } = supabase.storage.from(storageBucket).getPublicUrl(path);
+        return {
+          cover_image_path: path,
+          cover_image_url: data.publicUrl,
+        };
+      }
+
+      async function removeCoverImage(path) {
+        if (!path) {
+          return;
+        }
+
+        const { error } = await supabase.storage.from(storageBucket).remove([path]);
+        if (error) {
+          throw new Error(error.message);
+        }
+      }
+
+      function clearForm() {
+        articleForm.reset();
+        document.getElementById("id").value = "";
+        document.getElementById("published").checked = true;
+        coverImageUrlInput.value = "";
+        coverImagePathInput.value = "";
+        removeCoverFlagInput.value = "false";
+        coverImageFileInput.value = "";
+        updateCoverPreview(null);
+        deleteBtn.classList.add("hidden");
+      }
+
+      function populateForm(article) {
+        document.getElementById("id").value = article.id;
+        titleInput.value = article.title || "";
+        slugInput.value = article.slug || "";
+        document.getElementById("excerpt").value = article.excerpt || "";
+        document.getElementById("body").value = article.body || "";
+        document.getElementById("published").checked = !!article.published;
+        coverImageUrlInput.value = article.cover_image_url || "";
+        coverImagePathInput.value = article.cover_image_path || "";
+        removeCoverFlagInput.value = "false";
+        coverImageFileInput.value = "";
+        updateCoverPreview(article.cover_image_url || null);
+        deleteBtn.classList.remove("hidden");
+      }
+
+      async function loadArticles() {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("id, title, slug, excerpt, cover_image_url, published, updated_at")
+          .order("updated_at", { ascending: false });
+
+        if (error) {
+          setStatus(error.message, "err");
+          return;
+        }
+
+        articlesEl.innerHTML = "";
+
+        for (const item of data || []) {
+          const wrapper = document.createElement("article");
+          wrapper.className = "item";
+          wrapper.innerHTML = `
+            <div class="item-head">
+              <h3>${toText(item.title)}</h3>
+              <span class="tiny">${item.published ? "Published" : "Draft"}</span>
+            </div>
+            <p>/${toText(item.slug)}</p>
+            <p>${toText((item.excerpt || "No excerpt").slice(0, 110))}</p>
+            ${item.cover_image_url ? '<p class="tiny">Cover image attached</p>' : ""}
+          `;
+
+          wrapper.addEventListener("click", async () => {
+            const { data: fullArticle, error: loadErr } = await supabase
+              .from("articles")
+              .select("*")
+              .eq("id", item.id)
+              .single();
+
+            if (loadErr) {
+              setStatus(loadErr.message, "err");
+              return;
+            }
+
+            populateForm(fullArticle);
+          });
+
+          articlesEl.appendChild(wrapper);
+        }
+
+        if ((data || []).length === 0) {
+          articlesEl.innerHTML = '<p class="muted">No articles yet. Create your first one.</p>';
+        }
+      }
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideStatus();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+          setStatus(error.message, "err");
+          return;
+        }
+
+        setStatus("Signed in.");
+      });
+
+      signOutBtn.addEventListener("click", async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          setStatus(error.message, "err");
+          return;
+        }
+        setStatus("Signed out.");
+      });
+
+      titleInput.addEventListener("input", () => {
+        if (!slugInput.value) {
+          slugInput.value = slugify(titleInput.value);
+        }
+      });
+
+      resetFormBtn.addEventListener("click", () => {
+        clearForm();
+      });
+
+      removeCoverBtn.addEventListener("click", () => {
+        removeCoverFlagInput.value = "true";
+        coverImageUrlInput.value = "";
+        updateCoverPreview(null);
+      });
+
+      coverImageFileInput.addEventListener("change", () => {
+        const file = coverImageFileInput.files?.[0];
+        if (!file) {
+          if (!coverImageUrlInput.value) {
+            updateCoverPreview(null);
+          }
+          return;
+        }
+
+        removeCoverFlagInput.value = "false";
+        updateCoverPreview(URL.createObjectURL(file));
+      });
+
+      deleteBtn.addEventListener("click", async () => {
+        const id = document.getElementById("id").value;
+        if (!id) return;
+
+        if (!window.confirm("Delete this article?")) {
+          return;
+        }
+
+        const oldPath = coverImagePathInput.value;
+        const { error } = await supabase.from("articles").delete().eq("id", id);
+        if (error) {
+          setStatus(error.message, "err");
+          return;
+        }
+
+        if (oldPath) {
+          try {
+            await removeCoverImage(oldPath);
+          } catch {
+            // Keep article delete successful even if stale file cleanup fails.
+          }
+        }
+
+        setStatus("Article deleted.");
+        clearForm();
+        await loadArticles();
+      });
+
+      articleForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideStatus();
+
+        const id = document.getElementById("id").value || null;
+        const payload = {
+          title: titleInput.value.trim(),
+          slug: slugify(slugInput.value.trim()),
+          excerpt: document.getElementById("excerpt").value.trim(),
+          body: document.getElementById("body").value,
+          published: document.getElementById("published").checked,
+          cover_image_url: coverImageUrlInput.value || null,
+          cover_image_path: coverImagePathInput.value || null,
+        };
+
+        if (!payload.title || !payload.slug) {
+          setStatus("Title and slug are required.", "err");
+          return;
+        }
+
+        const originalPath = coverImagePathInput.value;
+
+        if (removeCoverFlagInput.value === "true") {
+          payload.cover_image_url = null;
+          payload.cover_image_path = null;
+        }
+
+        const nextFile = coverImageFileInput.files?.[0];
+        if (nextFile) {
+          try {
+            const uploaded = await uploadCoverImage(nextFile, payload.slug);
+            payload.cover_image_url = uploaded.cover_image_url;
+            payload.cover_image_path = uploaded.cover_image_path;
+          } catch (uploadError) {
+            setStatus(`Image upload failed: ${uploadError.message}`, "err");
+            return;
+          }
+        }
+
+        const mutation = id
+          ? supabase.from("articles").update(payload).eq("id", id)
+          : supabase.from("articles").insert(payload);
+
+        const { error } = await mutation;
+
+        if (error) {
+          setStatus(error.message, "err");
+          return;
+        }
+
+        if (originalPath && originalPath !== payload.cover_image_path) {
+          try {
+            await removeCoverImage(originalPath);
+          } catch {
+            // Keep article save successful even if stale file cleanup fails.
+          }
+        }
+
+        setStatus(id ? "Article updated." : "Article created.");
+        clearForm();
+        await loadArticles();
+      });
+
+      async function refreshSessionState() {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          setStatus(error.message, "err");
+          return;
+        }
+
+        const isLoggedIn = !!data.session;
+        authPanel.classList.toggle("hidden", isLoggedIn);
+        editorPanel.classList.toggle("hidden", !isLoggedIn);
+
+        if (isLoggedIn) {
+          await loadArticles();
+        }
+      }
+
+      supabase.auth.onAuthStateChange(() => {
+        refreshSessionState();
+      });
+
+      refreshSessionState();
+    </script>
+  </body>
+</html>

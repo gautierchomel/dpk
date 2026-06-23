@@ -1,61 +1,81 @@
 # DPK
 
-Astro static site generator frontend displaying articles from the edrlab.org WordPress site via its public REST API.
+Astro + Supabase article site with an integrated editor built in Astro.
 
-## Project layout
+## What you get
 
-- `./src` - Astro frontend source code
-- `./src/pages/index.astro` - Article listing page
-- WordPress content is fetched from `https://www.edrlab.org/wp-json/wp/v2/`
+- Public article homepage at `/`
+- Public article detail pages at `/articles/[slug]`
+- Admin editor UI at `/admin`
+- Supabase-backed CRUD with row-level security
+- Cover image upload and preview via Supabase Storage
 
 ## Prerequisites
 
 - Node.js 18+
-- No database required (content is read from WordPress API)
+- Supabase project
 
 ## Environment variables
 
-No environment variables required. The WordPress API endpoint is hardcoded in the source:
+Create a `.env` file in the project root:
 
-```javascript
-const WORDPRESS_API = "https://www.edrlab.org/wp-json/wp/v2";
+```bash
+PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+PUBLIC_SUPABASE_STORAGE_BUCKET=article-images
 ```
+
+`PUBLIC_*` variables are used by browser code in the public site and admin editor.
+
+## Database setup
+
+Apply the migrations in `supabase/migrations` using Supabase SQL Editor, or run:
+
+```bash
+supabase db push
+```
+
+This migration creates:
+
+- `public.articles` table
+- optional cover image fields (`cover_image_url`, `cover_image_path`)
+- timestamp update trigger
+- `article-images` storage bucket (public read)
+- RLS policies:
+  - public can read published articles
+  - authenticated users can read/insert/update/delete all articles
+  - authenticated users can upload/update/delete images in `article-images`
+
+## Create an editor user
+
+In Supabase Dashboard:
+
+1. Go to Authentication → Users
+2. Create a user (email/password)
+3. Use those credentials on `/admin`
 
 ## Install and run
 
-1. Install dependencies:
+```bash
+npm install
+npm run dev
+```
 
-   ```bash
-   npm install
-   ```
+Open:
 
-2. Run development server:
+- `http://localhost:4321/` for public site
+- `http://localhost:4321/admin` for editor
 
-   ```bash
-   npm run dev
-   ```
+## Build
 
-3. Open the site at `http://localhost:4321`.
+```bash
+npm run build
+```
 
-## Article display
-
-Articles are fetched from the WordPress REST API at build time:
-
-- All published posts are displayed on the index page
-- Post metadata (title, excerpt, date, author) is rendered
-- Links direct to the full article on the WordPress site
+If no Supabase env vars are set, dynamic article pages are skipped at build time.
 
 ## Scripts
 
-- `npm run dev` - Start Astro development server
-- `npm run build` - Build static site output to `./dist`
-- `npm run preview` - Preview built site locally
-
-## Deployment
-
-The Astro site generates static HTML that can be deployed to any hosting provider:
-
-- **Netlify**: `npm run build` → deploy `dist` folder
-- **GitHub Pages**: `npm run build` → deploy `dist` folder
-- **Vercel**: `npm run build` → deploy `dist` folder
-- **Any static host**: `npm run build` → deploy `dist` folder
+- `npm run dev` start local dev server
+- `npm run build` build static output
+- `npm run preview` preview build output
