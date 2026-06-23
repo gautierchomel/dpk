@@ -1,26 +1,14 @@
 ---
-const WORDPRESS_API = "https://www.edrlab.org/wp-json/wp/v2";
+import { fetchStrapiArticles } from "../lib/strapi";
 
-let posts = [];
-let error = null;
+const siteTitle = "DPK Articles";
+let articles = [];
+let error = "";
 
 try {
-  const res = await fetch(`${WORDPRESS_API}/posts?_embed&_fields=author,id,excerpt,title,link,slug,date,_embedded`);
-  
-  if (!res.ok) {
-    const data = await res.json();
-    error = data.message || `API returned status ${res.status}`;
-    // Note: edrlab.org restricts REST API to authenticated users
-    // To use a public WordPress API, either:
-    // 1. Use a WordPress site with public REST API enabled
-    // 2. Add authentication credentials to the fetch request
-    posts = [];
-  } else {
-    posts = await res.json();
-  }
+  articles = await fetchStrapiArticles();
 } catch (e) {
-  error = `Failed to connect to WordPress API: ${e.message}`;
-  posts = [];
+  error = e instanceof Error ? e.message : "Failed to load content from Strapi.";
 }
 ---
 
@@ -28,7 +16,7 @@ try {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DPK - Articles</title>
+    <title>{siteTitle}</title>
     <style>
       * {
         margin: 0;
@@ -71,6 +59,13 @@ try {
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
       }
+      .cover {
+        width: 100%;
+        max-height: 260px;
+        object-fit: cover;
+        border-radius: 6px;
+        margin-bottom: 0.85rem;
+      }
       article h2 {
         margin-bottom: 0.5rem;
       }
@@ -106,60 +101,59 @@ try {
         border-radius: 4px;
         border-left: 4px solid #c33;
       }
+      .empty {
+        background: #f4f8ff;
+        color: #1f4b89;
+        padding: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid #1f4b89;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <header>
-        <h1>DPK Articles</h1>
-        <p>Latest articles from edrlab.org</p>
+        <h1>{siteTitle}</h1>
+        <p>Latest articles from your Strapi backend.</p>
       </header>
 
-      {Array.isArray(posts) && posts.length > 0 ? (
+      {Array.isArray(articles) && articles.length > 0 ? (
         <div class="articles-grid">
-          {posts.map((post) => (
-            <article key={post.id}>
+          {articles.map((article) => (
+            <article key={article.id}>
+              {article.coverUrl && <img class="cover" src={article.coverUrl} alt={article.title} loading="lazy" />}
               <h2>
-                <a href={post.link} target="_blank" rel="noopener noreferrer">
-                  <span set:html={post.title.rendered} />
+                <a href={`/articles/${article.slug}/`}>
+                  {article.title}
                 </a>
               </h2>
               <div class="meta">
-                Published {new Date(post.date).toLocaleDateString("en-US", {
+                Published {new Date(article.publishedAt || article.createdAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric"
                 })}
+                {article.authorName && <> · By {article.authorName}</>}
+                {article.categoryName && <> · {article.categoryName}</>}
               </div>
-              {post.excerpt.rendered && (
-                <div class="excerpt" set:html={post.excerpt.rendered} />
+              {article.excerpt && (
+                <div class="excerpt">{article.excerpt}</div>
               )}
-              <a href={post.link} target="_blank" rel="noopener noreferrer" class="read-more">
-                Read on WordPress →
+              <a href={`/articles/${article.slug}/`} class="read-more">
+                Read article ->
               </a>
             </article>
           ))}
         </div>
-      ) : (
+      ) : error ? (
         <div class="error">
           <p>
-            {error ? (
-              <>
-                <strong>WordPress API Error:</strong> {error}
-                <br /><br />
-                <small>
-                  The WordPress API at {WORDPRESS_API} is restricting access. To use this integration:
-                  <ol style="margin-top: 0.5rem;">
-                    <li>Use a WordPress site with public REST API enabled</li>
-                    <li>Or update the API endpoint to a site with public posts</li>
-                    <li>Or add authentication to the fetch request</li>
-                  </ol>
-                </small>
-              </>
-            ) : (
-              <>No posts found. Please check the WordPress API configuration.</>
-            )}
+            <strong>Strapi API Error:</strong> {error}
           </p>
+        </div>
+      ) : (
+        <div class="empty">
+          <p>No published articles were found in Strapi.</p>
         </div>
       )}
     </div>

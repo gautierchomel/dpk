@@ -1,9 +1,11 @@
 {
   "name": "dpk",
   "version": "1.0.0",
-  "description": "Astro static site displaying articles from edrlab.org WordPress",
+  "description": "Astro static site connected to a Strapi backend",
   "scripts": {
     "dev": "astro dev",
+    "dev:strapi": "npm --prefix dpk run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:strapi\"",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
@@ -15,7 +17,7 @@
   },
   "keywords": [
     "astro",
-    "wordpress",
+    "strapi",
     "headless-cms"
   ],
   "author": "",
@@ -25,9 +27,9 @@
   },
   "homepage": "https://github.com/gautierchomel/dpk#readme",
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.2",
     "astro": "^4.16.19"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

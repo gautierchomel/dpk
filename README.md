@@ -1,61 +1,105 @@
 # DPK
 
-Astro static site generator frontend displaying articles from the edrlab.org WordPress site via its public REST API.
+Astro frontend connected to a Strapi backend.
 
 ## Project layout
 
-- `./src` - Astro frontend source code
-- `./src/pages/index.astro` - Article listing page
-- WordPress content is fetched from `https://www.edrlab.org/wp-json/wp/v2/`
+- ./src/pages/index.astro
+   Public article list page from Strapi
+- ./src/pages/articles/[slug].astro
+   Article detail page route
+- ./src/lib/strapi.ts
+   Shared Strapi fetch and normalization helpers
+- ./dpk
+   Strapi project (local backend)
 
 ## Prerequisites
 
 - Node.js 18+
-- No database required (content is read from WordPress API)
+- A running Strapi instance (local or hosted)
+
+## Required Strapi collection
+
+Create a collection type named articles with fields (matching your current Strapi project):
+
+- title (text)
+- slug (uid)
+- description (text)
+- cover (media)
+- author (relation)
+- category (relation)
+- blocks (dynamic zone with at least shared.rich-text)
+
+Make sure content is published and readable by the API token or public role.
 
 ## Environment variables
 
-No environment variables required. The WordPress API endpoint is hardcoded in the source:
+Create a .env file from .env.example and set:
 
-```javascript
-const WORDPRESS_API = "https://www.edrlab.org/wp-json/wp/v2";
-```
+- PUBLIC_STRAPI_URL=http://127.0.0.1:1337
+- STRAPI_URL=http://127.0.0.1:1337
+- STRAPI_COLLECTION=articles
+- STRAPI_API_TOKEN=... (optional, for private APIs)
+
+Notes:
+
+- STRAPI_URL is used server-side at build time.
+- PUBLIC_STRAPI_URL is fallback for local visibility and debugging.
 
 ## Install and run
 
-1. Install dependencies:
-
-   ```bash
+1. Install frontend dependencies from repo root:
    npm install
-   ```
+2. Install Strapi dependencies:
+   npm --prefix dpk install
+3. Run Astro + Strapi together:
+   npm run dev:all
+4. Open:
+   - Astro: http://localhost:4321
+   - Strapi: http://127.0.0.1:1337/admin
 
-2. Run development server:
+## Build
 
-   ```bash
-   npm run dev
-   ```
+1. npm run build
+2. Deploy dist to your static host (Netlify, Vercel, GitHub Pages, etc.)
 
-3. Open the site at `http://localhost:4321`.
+For production builds, STRAPI_URL should point to your hosted Strapi instance.
 
-## Article display
+## Deploy setup
 
-Articles are fetched from the WordPress REST API at build time:
+GitHub Actions workflow in .github/workflows/deploy.yml now builds and deploys Astro to Netlify.
 
-- All published posts are displayed on the index page
-- Post metadata (title, excerpt, date, author) is rendered
-- Links direct to the full article on the WordPress site
+Set these repository secrets:
+
+- NETLIFY_AUTH_TOKEN
+- NETLIFY_SITE_ID
+- STRAPI_URL
+- STRAPI_API_TOKEN (optional if Strapi API is public)
+
+Optional repository variable:
+
+- STRAPI_COLLECTION (defaults to articles)
+
+Behavior:
+
+- Pull requests to main: Netlify preview deploy
+- Pushes to main: Netlify production deploy
+
+## Create Strapi admin user
+
+From repo root:
+
+1. Install Strapi dependencies:
+   npm --prefix dpk install
+2. Create an admin user:
+   npm --prefix dpk run strapi -- admin:create --email you@example.com --password "your-password" --firstname Your --lastname Name
+
+Then sign in at http://127.0.0.1:1337/admin
 
 ## Scripts
 
-- `npm run dev` - Start Astro development server
-- `npm run build` - Build static site output to `./dist`
-- `npm run preview` - Preview built site locally
-
-## Deployment
-
-The Astro site generates static HTML that can be deployed to any hosting provider:
-
-- **Netlify**: `npm run build` → deploy `dist` folder
-- **GitHub Pages**: `npm run build` → deploy `dist` folder
-- **Vercel**: `npm run build` → deploy `dist` folder
-- **Any static host**: `npm run build` → deploy `dist` folder
+- npm run dev
+- npm run dev:strapi
+- npm run dev:all
+- npm run build
+- npm run preview
