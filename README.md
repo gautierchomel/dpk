@@ -134,8 +134,9 @@ If Strapi is unavailable during build, the build will warn and create a site wit
 
 3. Add environment variables in Render dashboard:
    - `DATABASE_CLIENT` = `postgres`
-   - `DATABASE_URL` = (copy from your PostgreSQL database details)
+   - `DATABASE_URL` = (copy the full Internal Database URL from Render PostgreSQL)
    - `NODE_ENV` = `production`
+   - Do not set `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, or `DATABASE_PASSWORD` when using `DATABASE_URL`
    - Generate secure keys (go to https://tools.strapi.io/keygen):
      - `API_TOKEN_SALT` = (random string)
      - `ADMIN_JWT_SECRET` = (random string)
