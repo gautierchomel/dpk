@@ -1,4 +1,4 @@
-name: Build SSR Artifact
+name: Build and Deploy to Netlify
 
 on:
   push:
@@ -10,15 +10,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-ssr
+  group: netlify-deploy
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      APOS_EXTERNAL_FRONT_KEY: ci-build-key
-      APOS_HOST: http://localhost:3000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,16 +30,39 @@ jobs:
         run: npm ci
 
       - name: Build Astro site
+        env:
+          APOS_EXTERNAL_FRONT_KEY: ${{ secrets.APOS_EXTERNAL_FRONT_KEY }}
+          APOS_HOST: ${{ secrets.APOS_HOST }}
         run: npm run build
 
-      - name: Verify SSR output
+      - name: Verify Netlify SSR output
         run: |
-          test -f dist/server/entry.mjs
-          test -d dist/client
+          test -d .netlify/v1/functions/ssr
+          test -d .netlify/build
 
-      - name: Upload SSR artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: astro-ssr-dist
-          path: dist
+          name: netlify-build-output
+          path: |
+            dist
+            .netlify
           if-no-files-found: error
+
+      - name: Deploy preview to Netlify (PR)
+        if: github.event_name == 'pull_request'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          APOS_EXTERNAL_FRONT_KEY: ${{ secrets.APOS_EXTERNAL_FRONT_KEY }}
+          APOS_HOST: ${{ secrets.APOS_HOST }}
+        run: npx netlify deploy --build --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
+
+      - name: Deploy production to Netlify (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          APOS_EXTERNAL_FRONT_KEY: ${{ secrets.APOS_EXTERNAL_FRONT_KEY }}
+          APOS_HOST: ${{ secrets.APOS_HOST }}
+        run: npx netlify deploy --build --prod --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"

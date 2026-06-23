@@ -69,3 +69,21 @@ APOS_EXTERNAL_FRONT_KEY=replace-with-the-same-random-secret
 - `npm run dev:all` - run frontend + backend together
 - `npm run build` - build Astro server output
 - `npm run preview` - preview Astro output
+
+## Netlify deployment
+
+The Astro frontend is configured for Netlify SSR via `@astrojs/netlify`.
+
+Set these GitHub repository secrets for the workflow:
+
+- `NETLIFY_AUTH_TOKEN`
+- `NETLIFY_SITE_ID`
+- `APOS_EXTERNAL_FRONT_KEY`
+- `APOS_HOST`
+
+`APOS_HOST` must point to your hosted Apostrophe backend URL (not localhost).
+
+The workflow deploys:
+
+- Pull requests: Netlify preview deploy
+- Pushes to `main`: Netlify production deploy

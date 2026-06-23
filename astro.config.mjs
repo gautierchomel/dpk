@@ -1,12 +1,10 @@
 import { defineConfig } from "astro/config";
-import node from "@astrojs/node";
+import netlify from "@astrojs/netlify";
 import apostrophe from "@apostrophecms/apostrophe-astro";
 
 export default defineConfig({
   output: "server",
-  adapter: node({
-    mode: "standalone",
-  }),
+  adapter: netlify(),
   integrations: [
     apostrophe({
       aposHost: process.env.APOS_HOST || "http://localhost:3000",
