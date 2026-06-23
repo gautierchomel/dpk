@@ -1,4 +1,4 @@
-name: Build and Deploy to Netlify
+name: Build Astro Site
 
 on:
   push:
@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: netlify-deploy
+  group: astro-build
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,39 +30,14 @@ jobs:
         run: npm ci
 
       - name: Build Astro site
-        env:
-          APOS_EXTERNAL_FRONT_KEY: ${{ secrets.APOS_EXTERNAL_FRONT_KEY }}
-          APOS_HOST: ${{ secrets.APOS_HOST }}
         run: npm run build
 
-      - name: Verify Netlify SSR output
-        run: |
-          test -d .netlify/v1/functions/ssr
-          test -d .netlify/build
+      - name: Verify build output
+        run: test -d dist
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: netlify-build-output
-          path: |
-            dist
-            .netlify
+          name: astro-dist
+          path: dist
           if-no-files-found: error
-
-      - name: Deploy preview to Netlify (PR)
-        if: github.event_name == 'pull_request'
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          APOS_EXTERNAL_FRONT_KEY: ${{ secrets.APOS_EXTERNAL_FRONT_KEY }}
-          APOS_HOST: ${{ secrets.APOS_HOST }}
-        run: npx netlify deploy --build --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
-
-      - name: Deploy production to Netlify (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          APOS_EXTERNAL_FRONT_KEY: ${{ secrets.APOS_EXTERNAL_FRONT_KEY }}
-          APOS_HOST: ${{ secrets.APOS_HOST }}
-        run: npx netlify deploy --build --prod --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"

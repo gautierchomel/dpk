@@ -1,11 +1,9 @@
 {
   "name": "dpk",
   "version": "1.0.0",
-  "description": "Astro website with a Supabase-backed message board.",
+  "description": "Astro static site displaying articles from edrlab.org WordPress",
   "scripts": {
     "dev": "astro dev",
-    "dev:cms": "npm --prefix backend run dev",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:cms\"",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
@@ -17,7 +15,8 @@
   },
   "keywords": [
     "astro",
-    "supabase"
+    "wordpress",
+    "headless-cms"
   ],
   "author": "",
   "license": "MIT",
@@ -26,12 +25,9 @@
   },
   "homepage": "https://github.com/gautierchomel/dpk#readme",
   "dependencies": {
-    "@apostrophecms/apostrophe-astro": "^1.13.0",
-    "@astrojs/netlify": "^5.5.4",
     "@supabase/supabase-js": "^2.108.2",
     "astro": "^4.16.19"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
   }
 }

@@ -1,89 +1,61 @@
 # DPK
 
-Astro frontend with an ApostropheCMS backend using the official
-`@apostrophecms/apostrophe-astro` integration.
+Astro static site generator frontend displaying articles from the edrlab.org WordPress site via its public REST API.
 
 ## Project layout
 
-- `./` Astro frontend (rendering and routes)
-- `./backend` ApostropheCMS backend (admin UI and content editing)
+- `./src` - Astro frontend source code
+- `./src/pages/index.astro` - Article listing page
+- WordPress content is fetched from `https://www.edrlab.org/wp-json/wp/v2/`
 
 ## Prerequisites
 
 - Node.js 18+
-- MongoDB running locally (or a remote MongoDB URI)
+- No database required (content is read from WordPress API)
 
 ## Environment variables
 
-Frontend (`.env` in repo root):
+No environment variables required. The WordPress API endpoint is hardcoded in the source:
 
-```bash
-APOS_HOST=http://localhost:3000
-APOS_EXTERNAL_FRONT_KEY=replace-with-a-random-secret
+```javascript
+const WORDPRESS_API = "https://www.edrlab.org/wp-json/wp/v2";
 ```
-
-Backend (`backend/.env`):
-
-```bash
-APOS_PORT=3000
-APOS_MONGODB_URI=mongodb://127.0.0.1:27017/dpk-cms
-APOS_EXTERNAL_FRONT_KEY=replace-with-the-same-random-secret
-```
-
-`APOS_EXTERNAL_FRONT_KEY` must be identical in both frontend and backend.
 
 ## Install and run
 
-1. Install frontend dependencies:
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Install backend dependencies:
+2. Run development server:
 
    ```bash
-   npm --prefix backend install
+   npm run dev
    ```
 
-3. Run frontend and backend together:
+3. Open the site at `http://localhost:4321`.
 
-   ```bash
-   npm run dev:all
-   ```
+## Article display
 
-4. Open the site at `http://localhost:4321`.
+Articles are fetched from the WordPress REST API at build time:
 
-5. Open the Apostrophe login at `http://localhost:4321/login`.
-
-## Article editing UI
-
-- Create an `Article Page` in Apostrophe.
-- Add and publish `Article` pieces from the admin UI.
-- Astro renders article index and show pages via Apostrophe template mapping.
+- All published posts are displayed on the index page
+- Post metadata (title, excerpt, date, author) is rendered
+- Links direct to the full article on the WordPress site
 
 ## Scripts
 
-- `npm run dev` - Astro frontend only
-- `npm run dev:cms` - Apostrophe backend only
-- `npm run dev:all` - run frontend + backend together
-- `npm run build` - build Astro server output
-- `npm run preview` - preview Astro output
+- `npm run dev` - Start Astro development server
+- `npm run build` - Build static site output to `./dist`
+- `npm run preview` - Preview built site locally
 
-## Netlify deployment
+## Deployment
 
-The Astro frontend is configured for Netlify SSR via `@astrojs/netlify`.
+The Astro site generates static HTML that can be deployed to any hosting provider:
 
-Set these GitHub repository secrets for the workflow:
-
-- `NETLIFY_AUTH_TOKEN`
-- `NETLIFY_SITE_ID`
-- `APOS_EXTERNAL_FRONT_KEY`
-- `APOS_HOST`
-
-`APOS_HOST` must point to your hosted Apostrophe backend URL (not localhost).
-
-The workflow deploys:
-
-- Pull requests: Netlify preview deploy
-- Pushes to `main`: Netlify production deploy
+- **Netlify**: `npm run build` → deploy `dist` folder
+- **GitHub Pages**: `npm run build` → deploy `dist` folder
+- **Vercel**: `npm run build` → deploy `dist` folder
+- **Any static host**: `npm run build` → deploy `dist` folder
