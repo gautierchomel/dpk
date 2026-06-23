@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -31,9 +31,9 @@ jobs:
 
       - name: Build Astro site
         env:
-          STRAPI_URL: ${{ secrets.STRAPI_URL }}
+          STRAPI_URL: ${{ secrets.STRAPI_URL || 'http://127.0.0.1:1337' }}
           STRAPI_API_TOKEN: ${{ secrets.STRAPI_API_TOKEN }}
-          STRAPI_COLLECTION: ${{ vars.STRAPI_COLLECTION || 'articles' }}
+          STRAPI_COLLECTION: articles
         run: npm run build
 
       - name: Verify build output
@@ -46,15 +46,28 @@ jobs:
           path: dist
           if-no-files-found: error
 
+      - name: Check Netlify secrets
+        id: netlify-check
+        run: |
+          if [[ -z "$NETLIFY_AUTH_TOKEN" ]] || [[ -z "$NETLIFY_SITE_ID" ]]; then
+            echo "has-secrets=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Skipping Netlify deploy: missing NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID secrets"
+          else
+            echo "has-secrets=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
       - name: Deploy preview to Netlify (PR)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.netlify-check.outputs.has-secrets == 'true'
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: npx netlify deploy --dir dist --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
 
       - name: Deploy production to Netlify (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.netlify-check.outputs.has-secrets == 'true'
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}

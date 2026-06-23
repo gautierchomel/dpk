@@ -69,21 +69,26 @@ For production builds, STRAPI_URL should point to your hosted Strapi instance.
 
 GitHub Actions workflow in .github/workflows/deploy.yml now builds and deploys Astro to Netlify.
 
+### Netlify deployment (optional)
+
+To enable automatic deployment to Netlify, set these repository secrets in GitHub Settings:
+
+- NETLIFY_AUTH_TOKEN: Your Netlify personal access token
+- NETLIFY_SITE_ID: Your Netlify site ID
+
+If these secrets are not configured, the build will succeed but deployment steps will be skipped.
+
+### Strapi backend environment (required for build)
+
 Set these repository secrets:
 
-- NETLIFY_AUTH_TOKEN
-- NETLIFY_SITE_ID
-- STRAPI_URL
-- STRAPI_API_TOKEN (optional if Strapi API is public)
+- STRAPI_URL: Your Strapi backend URL (defaults to http://127.0.0.1:1337 if not set)
+- STRAPI_API_TOKEN: Optional API token if your Strapi API is private
 
-Optional repository variable:
+### Behavior
 
-- STRAPI_COLLECTION (defaults to articles)
-
-Behavior:
-
-- Pull requests to main: Netlify preview deploy
-- Pushes to main: Netlify production deploy
+- Pull requests to main: Build + Netlify preview deploy (if secrets configured)
+- Pushes to main: Build + Netlify production deploy (if secrets configured)
 
 ## Create Strapi admin user
 
