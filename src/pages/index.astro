@@ -1,0 +1,345 @@
+---
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? "";
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
+const isConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DPK Community Board</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top, rgba(59, 130, 246, 0.3), transparent 40%),
+          #0f172a;
+      }
+
+      main {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 4rem 1.5rem;
+      }
+
+      .hero {
+        display: grid;
+        gap: 2rem;
+        align-items: start;
+      }
+
+      .hero-copy h1 {
+        margin: 0 0 1rem;
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+      }
+
+      .hero-copy p {
+        margin: 0;
+        max-width: 42rem;
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+
+      .grid {
+        margin-top: 2.5rem;
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+      }
+
+      .panel {
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        backdrop-filter: blur(18px);
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.15);
+        color: #93c5fd;
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      label {
+        display: grid;
+        gap: 0.4rem;
+        font-weight: 600;
+      }
+
+      input,
+      textarea,
+      button {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        font: inherit;
+      }
+
+      input,
+      textarea {
+        padding: 0.85rem 1rem;
+        background: rgba(15, 23, 42, 0.95);
+        color: inherit;
+      }
+
+      textarea {
+        min-height: 8rem;
+        resize: vertical;
+      }
+
+      button {
+        cursor: pointer;
+        padding: 0.9rem 1.1rem;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: white;
+        font-weight: 700;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      li {
+        padding: 1rem;
+        border-radius: 0.85rem;
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+      }
+
+      li strong,
+      h2,
+      h3 {
+        color: white;
+      }
+
+      .meta,
+      .status,
+      .empty {
+        color: #cbd5e1;
+      }
+
+      .meta {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .tips {
+        margin: 0;
+        padding-left: 1rem;
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Astro + Supabase</span>
+          <h1>Launch a lightweight site with a managed backend.</h1>
+          <p>
+            This starter pairs Astro's fast frontend with Supabase for live data. Configure your
+            Supabase project and the homepage becomes a simple community board backed by the
+            <code>messages</code> table.
+          </p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h2>Post a message</h2>
+          <p class="status" id="connection-status">
+            {
+              isConfigured
+                ? "Supabase credentials detected. Loading live messages…"
+                : "Add PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY to enable live data."
+            }
+          </p>
+
+          <form id="message-form">
+            <label>
+              Name
+              <input name="name" maxlength="80" placeholder="Ada Lovelace" required />
+            </label>
+
+            <label>
+              Message
+              <textarea
+                name="message"
+                maxlength="280"
+                placeholder="Share an update with the community"
+                required
+              ></textarea>
+            </label>
+
+            <button type="submit" disabled={!isConfigured}>Save to Supabase</button>
+          </form>
+        </article>
+
+        <article class="panel">
+          <h2>Recent messages</h2>
+          <ul id="message-list">
+            <li class="empty">
+              {
+                isConfigured
+                  ? "Loading messages from Supabase…"
+                  : "Configure Supabase to replace this placeholder with live messages."
+              }
+            </li>
+          </ul>
+        </article>
+
+        <article class="panel">
+          <h3>Supabase setup</h3>
+          <ol class="tips">
+            <li>Create a Supabase project and copy the project URL and anon key.</li>
+            <li>Set <code>PUBLIC_SUPABASE_URL</code> and <code>PUBLIC_SUPABASE_ANON_KEY</code>.</li>
+            <li>Create the <code>messages</code> table described in the README.</li>
+          </ol>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" define:vars={{ supabaseUrl, supabaseAnonKey }}>
+      import { createClient } from "@supabase/supabase-js";
+
+      const status = document.querySelector("#connection-status");
+      const form = document.querySelector("#message-form");
+      const list = document.querySelector("#message-list");
+      const submitButton = form?.querySelector("button[type='submit']");
+
+      const renderMessages = (messages = []) => {
+        if (!list) {
+          return;
+        }
+
+        if (!messages.length) {
+          const item = document.createElement("li");
+          item.className = "empty";
+          item.textContent = "No messages yet. Be the first to post.";
+          list.replaceChildren(item);
+          return;
+        }
+
+        const items = messages.map(({ name, message, created_at }) => {
+          const item = document.createElement("li");
+          const title = document.createElement("strong");
+          const body = document.createElement("p");
+          const meta = document.createElement("div");
+
+          title.textContent = name;
+          body.textContent = message;
+          meta.className = "meta";
+          meta.textContent = new Date(created_at).toLocaleString();
+
+          item.append(title, body, meta);
+          return item;
+        });
+
+        list.replaceChildren(...items);
+      };
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        renderMessages([]);
+      } else {
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const loadMessages = async () => {
+          if (status) {
+            status.textContent = "Loading messages from Supabase…";
+          }
+
+          const { data, error } = await supabase
+            .from("messages")
+            .select("id, name, message, created_at")
+            .order("created_at", { ascending: false })
+            .limit(5);
+
+          if (error) {
+            if (status) {
+              status.textContent = `Unable to load messages: ${error.message}`;
+            }
+            renderMessages([]);
+            return;
+          }
+
+          if (status) {
+            status.textContent = "Connected to Supabase.";
+          }
+
+          renderMessages(data ?? []);
+        };
+
+        form?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const formData = new FormData(form);
+          const name = String(formData.get("name") ?? "").trim();
+          const message = String(formData.get("message") ?? "").trim();
+
+          if (!name || !message) {
+            return;
+          }
+
+          if (submitButton) {
+            submitButton.disabled = true;
+          }
+
+          if (status) {
+            status.textContent = "Saving message…";
+          }
+
+          const { error } = await supabase.from("messages").insert([{ name, message }]);
+
+          if (error) {
+            if (status) {
+              status.textContent = `Unable to save message: ${error.message}`;
+            }
+          } else {
+            form.reset();
+            if (status) {
+              status.textContent = "Message saved.";
+            }
+            await loadMessages();
+          }
+
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        });
+
+        loadMessages();
+      }
+    </script>
+  </body>
+</html>
