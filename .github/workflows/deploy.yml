@@ -29,12 +29,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Strapi dependencies
+        run: npm --prefix dpk ci
+
+      - name: Start Strapi in background
+        run: |
+          npm --prefix dpk run build
+          npm --prefix dpk run start &
+          echo $! > /tmp/strapi.pid
+          # Wait for Strapi to be ready
+          timeout 60 bash -c 'until curl -s http://127.0.0.1:1337/admin/init > /dev/null 2>&1; do sleep 1; done'
+        env:
+          NODE_ENV: production
+
       - name: Build Astro site
         env:
-          STRAPI_URL: ${{ secrets.STRAPI_URL || 'http://127.0.0.1:1337' }}
+          STRAPI_URL: http://127.0.0.1:1337
           STRAPI_API_TOKEN: ${{ secrets.STRAPI_API_TOKEN }}
           STRAPI_COLLECTION: articles
         run: npm run build
+
+      - name: Stop Strapi
+        if: always()
+        run: |
+          if [ -f /tmp/strapi.pid ]; then
+            kill $(cat /tmp/strapi.pid) 2>/dev/null || true
+          fi
 
       - name: Verify build output
         run: test -d dist

@@ -60,14 +60,35 @@ Notes:
 
 ## Build
 
-1. npm run build
-2. Deploy dist to your static host (Netlify, Vercel, GitHub Pages, etc.)
+1. Create .env file (or use existing):
+   ```
+   STRAPI_URL=http://127.0.0.1:1337
+   STRAPI_COLLECTION=articles
+   ```
 
-For production builds, STRAPI_URL should point to your hosted Strapi instance.
+2. Ensure Strapi is running:
+   ```
+   npm --prefix dpk run dev
+   ```
+
+3. In a separate terminal, build:
+   ```
+   npm run build
+   ```
+
+The build will pre-render static HTML for each article fetched from Strapi. If Strapi is unavailable, the build will log a warning and still create the site with just the homepage.
+
+For production builds, ensure STRAPI_URL points to your hosted Strapi instance.
 
 ## Deploy setup
 
-GitHub Actions workflow in .github/workflows/deploy.yml now builds and deploys Astro to Netlify.
+GitHub Actions workflow in .github/workflows/deploy.yml now builds Astro with Strapi and deploys to Netlify.
+
+The workflow:
+1. Installs dependencies for both Astro and Strapi
+2. Builds and starts Strapi (production mode)
+3. Builds Astro (which pre-renders all article pages from Strapi)
+4. Deploys to Netlify (if secrets are configured)
 
 ### Netlify deployment (optional)
 
@@ -78,11 +99,16 @@ To enable automatic deployment to Netlify, set these repository secrets in GitHu
 
 If these secrets are not configured, the build will succeed but deployment steps will be skipped.
 
-### Strapi backend environment (required for build)
+### Strapi configuration for CI/CD
 
-Set these repository secrets:
+The GitHub Actions workflow automatically:
+- Builds the Strapi backend (from `/dpk` folder)
+- Starts it in production mode on `http://127.0.0.1:1337`
+- Uses it to fetch articles during the Astro build
 
-- STRAPI_URL: Your Strapi backend URL (defaults to http://127.0.0.1:1337 if not set)
+Optional: Set these secrets if you want to use a hosted Strapi instance instead:
+
+- STRAPI_URL: Your production Strapi backend URL
 - STRAPI_API_TOKEN: Optional API token if your Strapi API is private
 
 ### Behavior

@@ -12,7 +12,12 @@ export async function getStaticPaths() {
       params: { slug: article.slug },
       props: { article },
     }));
-  } catch {
+  } catch (error) {
+    console.error(
+      "Failed to fetch articles for static generation. Make sure STRAPI_URL is set and Strapi is running.",
+      error
+    );
+    // Return empty array; individual article pages will 404, but index page will still work
     return [];
   }
 }
