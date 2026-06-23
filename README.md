@@ -34,17 +34,45 @@ Make sure content is published and readable by the API token or public role.
 
 ## Environment variables
 
-Create a .env file from .env.example and set:
+### Local Development
 
-- PUBLIC_STRAPI_URL=http://127.0.0.1:1337
-- STRAPI_URL=http://127.0.0.1:1337
-- STRAPI_COLLECTION=articles
-- STRAPI_API_TOKEN=... (optional, for private APIs)
+Create a `.env` file in the root directory:
 
-Notes:
+```
+STRAPI_URL=http://127.0.0.1:1337
+STRAPI_COLLECTION=articles
+```
 
-- STRAPI_URL is used server-side at build time.
-- PUBLIC_STRAPI_URL is fallback for local visibility and debugging.
+**Optional** (if you want to test with remote Strapi):
+```
+STRAPI_URL=https://your-strapi.onrender.com
+STRAPI_API_TOKEN=... (if your API is private)
+```
+
+### Strapi Configuration
+
+In `/dpk/.env`, configure your database:
+
+**Local SQLite (default):**
+```
+DATABASE_CLIENT=sqlite
+NODE_ENV=development
+```
+
+**Production PostgreSQL (Render):**
+```
+DATABASE_CLIENT=postgres
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+NODE_ENV=production
+```
+
+Generate secure keys at https://tools.strapi.io/keygen and add to `.env`:
+```
+API_TOKEN_SALT=...
+ADMIN_JWT_SECRET=...
+JWT_SECRET=...
+APP_KEYS=...
+```
 
 ## Install and run
 
@@ -60,61 +88,93 @@ Notes:
 
 ## Build
 
-1. Create .env file (or use existing):
-   ```
-   STRAPI_URL=http://127.0.0.1:1337
-   STRAPI_COLLECTION=articles
-   ```
+### Local Build
 
-2. Ensure Strapi is running:
+1. Start Strapi:
    ```
    npm --prefix dpk run dev
    ```
 
-3. In a separate terminal, build:
+2. In another terminal, build:
    ```
    npm run build
    ```
 
-The build will pre-render static HTML for each article fetched from Strapi. If Strapi is unavailable, the build will log a warning and still create the site with just the homepage.
+### Production Build (uses remote Strapi)
 
-For production builds, ensure STRAPI_URL points to your hosted Strapi instance.
+The GitHub Actions workflow automatically:
+1. Fetches articles from your Render Strapi (via STRAPI_URL secret)
+2. Pre-renders all article pages as static HTML
+3. Deploys to Netlify/GitHub Pages
+
+If Strapi is unavailable during build, the build will warn and create a site with just the homepage.
 
 ## Deploy setup
 
-GitHub Actions workflow in .github/workflows/deploy.yml now builds Astro with Strapi and deploys to Netlify.
+### Architecture
 
-The workflow:
-1. Installs dependencies for both Astro and Strapi
-2. Builds and starts Strapi (production mode)
-3. Builds Astro (which pre-renders all article pages from Strapi)
-4. Deploys to Netlify (if secrets are configured)
+- **Frontend:** Astro static site deployed to Netlify/GitHub Pages/anywhere
+- **Backend:** Strapi deployed to Render (PostgreSQL)
+- **CI/CD:** GitHub Actions builds Astro using remote Strapi API, then deploys
 
-### Netlify deployment (optional)
+### Step 1: Deploy Strapi to Render
 
-To enable automatic deployment to Netlify, set these repository secrets in GitHub Settings:
+1. Push your code to GitHub (if you haven't already):
+   ```bash
+   git add .
+   git commit -m "Add Strapi with Render config"
+   git push
+   ```
 
-- NETLIFY_AUTH_TOKEN: Your Netlify personal access token
-- NETLIFY_SITE_ID: Your Netlify site ID
+2. Go to https://render.com and create a new **Web Service**
+   - Connect your GitHub repo
+   - Set the root directory to `/dpk` (Strapi folder)
+   - Build command: `npm install && npm run build`
+   - Start command: `npm run start`
 
-If these secrets are not configured, the build will succeed but deployment steps will be skipped.
+3. Add environment variables in Render dashboard:
+   - `DATABASE_CLIENT` = `postgres`
+   - `DATABASE_URL` = (copy from your PostgreSQL database details)
+   - `NODE_ENV` = `production`
+   - Generate secure keys (go to https://tools.strapi.io/keygen):
+     - `API_TOKEN_SALT` = (random string)
+     - `ADMIN_JWT_SECRET` = (random string)
+     - `JWT_SECRET` = (random string)
+     - `APP_KEYS` = (comma-separated random strings)
 
-### Strapi configuration for CI/CD
+4. Deploy and wait for Strapi to start
+5. Go to `https://your-strapi.onrender.com/admin` and create an admin user
+6. Create/publish articles in the admin panel
 
-The GitHub Actions workflow automatically:
-- Builds the Strapi backend (from `/dpk` folder)
-- Starts it in production mode on `http://127.0.0.1:1337`
-- Uses it to fetch articles during the Astro build
+### Step 2: Configure GitHub Actions
 
-Optional: Set these secrets if you want to use a hosted Strapi instance instead:
+Add these secrets to your GitHub repo (Settings → Secrets):
 
-- STRAPI_URL: Your production Strapi backend URL
-- STRAPI_API_TOKEN: Optional API token if your Strapi API is private
+- `STRAPI_URL`: Your Render Strapi URL (e.g., `https://your-strapi.onrender.com`)
+- `STRAPI_API_TOKEN`: (optional, only if your Strapi API is private)
 
-### Behavior
+For Netlify deployment (optional):
+- `NETLIFY_AUTH_TOKEN`: Your Netlify personal access token
+- `NETLIFY_SITE_ID`: Your Netlify site ID
 
-- Pull requests to main: Build + Netlify preview deploy (if secrets configured)
-- Pushes to main: Build + Netlify production deploy (if secrets configured)
+### Step 3: Push to Trigger Build
+
+When you push to main:
+1. GitHub Actions fetches articles from your Render Strapi
+2. Astro pre-renders all article pages as static HTML
+3. Deploys to Netlify/GitHub Pages (if configured)
+
+### Updating Content
+
+1. Edit articles in your Render Strapi admin: `https://your-strapi.onrender.com/admin`
+2. Either:
+   - Wait for GitHub Actions to redeploy (requires pushing something to main), OR
+   - Manually trigger a rebuild in GitHub Actions or Netlify
+
+To auto-rebuild when content changes, consider:
+- Strapi webhooks → GitHub API to trigger Actions
+- Scheduled rebuilds (cron job in Actions)
+- Netlify build hooks
 
 ## Create Strapi admin user
 
