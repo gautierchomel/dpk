@@ -1,0 +1,48 @@
+---
+const { page, pieces = [] } = Astro.props.aposData;
+---
+
+<main class="wrap">
+  <h1>{page?.title ?? "Articles"}</h1>
+
+  {!pieces.length ? (
+    <p>No articles published yet.</p>
+  ) : (
+    <ul class="list">
+      {pieces.map((piece) => (
+        <li class="card">
+          <a href={piece._url}>
+            <h2>{piece.title}</h2>
+          </a>
+          {piece.excerpt && <p>{piece.excerpt}</p>}
+        </li>
+      ))}
+    </ul>
+  )}
+</main>
+
+<style>
+  .wrap {
+    max-width: 64rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .card {
+    border: 1px solid #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 1rem;
+  }
+
+  h2 {
+    margin: 0 0 0.5rem;
+  }
+</style>

@@ -1,50 +1,71 @@
 # DPK
 
-An Astro website wired to a Supabase backend. The homepage renders a small community board that
-reads from and writes to a Supabase `messages` table.
+Astro frontend with an ApostropheCMS backend using the official
+`@apostrophecms/apostrophe-astro` integration.
 
-## Getting started
+## Project layout
 
-1. Install dependencies:
+- `./` Astro frontend (rendering and routes)
+- `./backend` ApostropheCMS backend (admin UI and content editing)
+
+## Prerequisites
+
+- Node.js 18+
+- MongoDB running locally (or a remote MongoDB URI)
+
+## Environment variables
+
+Frontend (`.env` in repo root):
+
+```bash
+APOS_HOST=http://localhost:3000
+APOS_EXTERNAL_FRONT_KEY=replace-with-a-random-secret
+```
+
+Backend (`backend/.env`):
+
+```bash
+APOS_PORT=3000
+APOS_MONGODB_URI=mongodb://127.0.0.1:27017/dpk-cms
+APOS_EXTERNAL_FRONT_KEY=replace-with-the-same-random-secret
+```
+
+`APOS_EXTERNAL_FRONT_KEY` must be identical in both frontend and backend.
+
+## Install and run
+
+1. Install frontend dependencies:
 
    ```bash
    npm install
    ```
 
-2. Create a `.env` file:
+2. Install backend dependencies:
 
    ```bash
-   PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   npm --prefix backend install
    ```
 
-3. Create the backing table in Supabase:
-
-   ```sql
-   create table if not exists public.messages (
-     id bigint generated always as identity primary key,
-     name text not null,
-     message text not null,
-     created_at timestamptz not null default timezone('utc', now())
-   );
-
-   alter table public.messages enable row level security;
-
-   create policy "Allow public reads" on public.messages
-     for select using (true);
-
-   create policy "Allow public inserts" on public.messages
-     for insert with check (true);
-   ```
-
-4. Start the Astro site:
+3. Run frontend and backend together:
 
    ```bash
-   npm run dev
+   npm run dev:all
    ```
+
+4. Open the site at `http://localhost:4321`.
+
+5. Open the Apostrophe login at `http://localhost:4321/login`.
+
+## Article editing UI
+
+- Create an `Article Page` in Apostrophe.
+- Add and publish `Article` pieces from the admin UI.
+- Astro renders article index and show pages via Apostrophe template mapping.
 
 ## Scripts
 
-- `npm run dev` - run the Astro development server
-- `npm run build` - create a production build
-- `npm run preview` - preview the production build locally
+- `npm run dev` - Astro frontend only
+- `npm run dev:cms` - Apostrophe backend only
+- `npm run dev:all` - run frontend + backend together
+- `npm run build` - build Astro server output
+- `npm run preview` - preview Astro output

@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages
+name: Build SSR Artifact
 
 on:
   push:
@@ -8,16 +8,17 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ci-ssr
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      APOS_EXTERNAL_FRONT_KEY: ci-build-key
+      APOS_HOST: http://localhost:3000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,19 +35,14 @@ jobs:
       - name: Build Astro site
         run: npm run build
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
+      - name: Verify SSR output
+        run: |
+          test -f dist/server/entry.mjs
+          test -d dist/client
 
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Upload SSR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: astro-ssr-dist
+          path: dist
+          if-no-files-found: error
